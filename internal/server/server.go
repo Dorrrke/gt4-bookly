@@ -56,8 +56,8 @@ func (s *Server) configRouting() *gin.Engine {
 	users := router.Group("/users")
 	{
 		users.GET("/info")
-		users.POST("/register")
-		users.POST("/login")
+		users.POST("/register", s.registerHendler)
+		users.POST("/login", s.loginHendler)
 	}
 	books := router.Group("/books")
 	{
