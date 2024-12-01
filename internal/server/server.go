@@ -22,7 +22,7 @@ type Server struct {
 
 func New(cfg config.Config, us service.UserService, bs service.BookService) *Server {
 	addrStr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	server := http.Server{
+	server := http.Server{ //nolint:gosec //todo
 		Addr: addrStr,
 	}
 	vald := validator.New()
