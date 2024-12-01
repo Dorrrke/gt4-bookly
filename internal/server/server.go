@@ -52,7 +52,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s *Server) configRouting() *gin.Engine {
 	router := gin.Default()
-	router.GET("/", func(ctx *gin.Context) { ctx.String(200, "Hello, my friend!") })
+	router.GET("/", func(ctx *gin.Context) { ctx.String(http.StatusOK, "Hello, my friend!") })
 	users := router.Group("/users")
 	{
 		users.GET("/info")

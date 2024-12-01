@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/Dorrrke/gt4-bookly/internal/domain/models"
 	"github.com/Dorrrke/gt4-bookly/internal/logger"
@@ -24,7 +24,7 @@ func (ms *MapStorage) SaveUser(user models.User) (string, error) {
 	log := logger.Get()
 	for _, usr := range ms.stor {
 		if user.Email == usr.Email {
-			return ``, fmt.Errorf("user alredy exist")
+			return ``, errors.New("user alredy exist")
 		}
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Passoword), bcrypt.DefaultCost)
@@ -32,23 +32,23 @@ func (ms *MapStorage) SaveUser(user models.User) (string, error) {
 		return ``, err
 	}
 	user.Passoword = string(hash)
-	UID := uuid.New()
-	user.UID = UID
+	uid := uuid.New()
+	user.UID = uid
 	ms.stor[user.UID.String()] = user
 	log.Debug().Any("storage", ms.stor).Msg("check storage")
-	return UID.String(), nil
+	return uid.String(), nil
 }
 
 func (ms *MapStorage) ValidateUser(user models.UserLogin) (string, error) {
 	for key, usr := range ms.stor {
 		if user.Email == usr.Email {
 			if err := bcrypt.CompareHashAndPassword([]byte(usr.Passoword), []byte(user.Passoword)); err != nil {
-				return ``, fmt.Errorf("invalid user password")
+				return ``, errors.New("invalid user password")
 			}
 			return key, nil
 		}
 	}
-	return ``, fmt.Errorf("user no exist")
+	return ``, errors.New("user no exist")
 }
 
 func (ms *MapStorage) SaveBook(book models.Book) (string, error) {

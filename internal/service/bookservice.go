@@ -17,10 +17,6 @@ func NewBookService(stor BookStorage) BookService {
 	return BookService{stor: stor}
 }
 
-func (bs *BookService) AddBook(book models.Book) (string, error) {
-	return bs.stor.SaveBook(book)
-}
-
 func (bs *BookService) GetBooks() ([]models.Book, error) {
 	return bs.stor.GetBooks()
 }
