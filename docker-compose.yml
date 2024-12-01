@@ -1,0 +1,10 @@
+#docker compose up
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gt4
+    ports:
+      - "5432:5432"
