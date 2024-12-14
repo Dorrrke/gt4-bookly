@@ -96,6 +96,56 @@ func (dbs *DBStorage) GetBooks() ([]models.Book, error) {
 	return books, nil
 }
 
+func (dbs *DBStorage) SaveBook(book models.Book) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var bid string
+	row := dbs.conn.QueryRow(ctx, "SELECT bid FROM books WHERE lable=$1 AND author=$2", book.Lable, book.Author)
+	err := row.Scan(&bid)
+	if err == nil {
+		return ``, storageerror.ErrBookAlredyExist
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return ``, err
+	}
+	nBid := uuid.New()
+	book.BID = nBid
+	_, err = dbs.conn.Exec(ctx, "INSERT INTO books (bid, lable, author, descriptons, WritedAt) VALUES ($1, $2, $3, $4, $5)",
+		book.BID.String(), book.Lable, book.Author, book.Description, book.WritedAt)
+	if err != nil {
+		return ``, err
+	}
+	return book.BID.String(), nil
+}
+
+func (dbs *DBStorage) GetBook(bid string) (models.Book, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var book models.Book
+	row := dbs.conn.QueryRow(ctx, "SELECT * FROM books WHERE bid=$1", bid)
+	err := row.Scan(&book.BID, &book.Lable, &book.Author, &book.Description, &book.WritedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.Book{}, storageerror.ErrBookNoFound
+		}
+		return models.Book{}, err
+	}
+	return book, nil
+}
+
+func (dbs *DBStorage) DeleteBook(bid string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := dbs.conn.Exec(ctx, "DELETE FROM books WHERE bid=$1", bid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func Migrations(dbDsn string, migratePath string) error {
 	log := logger.Get()
 	migrPath := fmt.Sprintf("file://%s", migratePath)

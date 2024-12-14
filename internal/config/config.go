@@ -9,9 +9,11 @@ import (
 )
 
 type Config struct {
-	Host  string
-	Port  int
-	Debug bool
+	Host        string
+	Port        int
+	DbDSN       string
+	MigratePath string
+	Debug       bool
 }
 
 const (
@@ -36,5 +38,7 @@ func ReadConfig() Config {
 		}
 		cfg.Port = port
 	}
+	cfg.MigratePath = cmp.Or(os.Getenv("MIGRATE_PATH"), "migrations")
+	cfg.DbDSN = cmp.Or(os.Getenv("DB_DSN"), "postgres://user:password@localhost:5432/gt4?sslmode=disable")
 	return cfg
 }

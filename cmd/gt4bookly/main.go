@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/Dorrrke/gt4-bookly/internal/config"
 	"github.com/Dorrrke/gt4-bookly/internal/logger"
 	"github.com/Dorrrke/gt4-bookly/internal/server"
@@ -14,11 +16,14 @@ func main() {
 	cfg := config.ReadConfig()
 	log := logger.Get(cfg.Debug)
 
-	err := storage.Migrations("postgres://user:password@localhost:5432/gt4?sslmode=disable", "migrations")
+	err := storage.Migrations(cfg.DbDSN, cfg.MigratePath)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
-	stor := storage.New()
+	stor, err := storage.NewDB(context.Background(), cfg.DbDSN)
+	if err != nil {
+		log.Fatal().Err(err).Send()
+	}
 	userService := service.NewUserService(stor)
 	bookService := service.NewBookService(stor)
 	serve := server.New(cfg, userService, bookService)

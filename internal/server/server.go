@@ -61,7 +61,7 @@ func (s *Server) configRouting() *gin.Engine {
 	}
 	books := router.Group("/books")
 	{
-		books.GET("/:id")
+		books.GET("/:id", s.getBookHandler)
 		books.DELETE("/:id")
 		books.GET("/", s.getBooksHandler)
 		books.POST("/", s.addBookHandler)
