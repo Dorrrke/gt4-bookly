@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) addBookHandler(ctx *gin.Context) {
+func (s *BooklyAPI) addBookHandler(ctx *gin.Context) {
 	log := logger.Get()
 	var bookReq models.BookRequest
 	err := ctx.ShouldBindBodyWithJSON(&bookReq)
@@ -47,7 +47,7 @@ func (s *Server) addBookHandler(ctx *gin.Context) {
 	ctx.String(http.StatusCreated, "Book %s was saved", bid)
 }
 
-func (s *Server) getBooksHandler(ctx *gin.Context) {
+func (s *BooklyAPI) getBooksHandler(ctx *gin.Context) {
 	log := logger.Get()
 	books, err := s.bService.GetBooks()
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *Server) getBooksHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, books)
 }
 
-func (s *Server) getBookHandler(ctx *gin.Context) {
+func (s *BooklyAPI) getBookHandler(ctx *gin.Context) {
 	log := logger.Get()
 	bid := ctx.Param("id")
 	log.Debug().Str("bid", bid).Msg("chek bid from param")

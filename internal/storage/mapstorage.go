@@ -11,16 +11,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type MapStorage struct {
-	stor  map[string]models.User
-	bStor map[string]models.Book
+type MapUserStorage struct {
+	stor map[string]models.User
 }
 
-func New() *MapStorage {
-	return &MapStorage{stor: make(map[string]models.User)}
+func NewUserStor() *MapUserStorage {
+	return &MapUserStorage{
+		stor: make(map[string]models.User),
+	}
 }
 
-func (ms *MapStorage) SaveUser(user models.User) (string, error) {
+func (ms *MapUserStorage) SaveUser(user models.User) (string, error) {
 	log := logger.Get()
 	for _, usr := range ms.stor {
 		if user.Email == usr.Email {
@@ -39,7 +40,7 @@ func (ms *MapStorage) SaveUser(user models.User) (string, error) {
 	return uid.String(), nil
 }
 
-func (ms *MapStorage) ValidateUser(user models.UserLogin) (string, error) {
+func (ms *MapUserStorage) ValidateUser(user models.UserLogin) (string, error) {
 	for key, usr := range ms.stor {
 		if user.Email == usr.Email {
 			if err := bcrypt.CompareHashAndPassword([]byte(usr.Passoword), []byte(user.Passoword)); err != nil {
@@ -51,7 +52,17 @@ func (ms *MapStorage) ValidateUser(user models.UserLogin) (string, error) {
 	return ``, errors.New("user no exist")
 }
 
-func (ms *MapStorage) SaveBook(book models.Book) (string, error) {
+type MapBookStorage struct {
+	bStor map[string]models.Book
+}
+
+func NewBookStor() *MapBookStorage {
+	return &MapBookStorage{
+		bStor: make(map[string]models.Book),
+	}
+}
+
+func (ms *MapBookStorage) SaveBook(book models.Book) (string, error) {
 	log := logger.Get()
 	for _, b := range ms.bStor {
 		if book.Lable == b.Lable && book.Author == b.Author {
@@ -61,11 +72,11 @@ func (ms *MapStorage) SaveBook(book models.Book) (string, error) {
 	bID := uuid.New()
 	book.BID = bID
 	ms.bStor[book.BID.String()] = book
-	log.Debug().Any("book storage", ms.stor).Msg("check storage")
+	log.Debug().Any("book storage", ms.bStor).Msg("check storage")
 	return bID.String(), nil
 }
 
-func (ms *MapStorage) GetBooks() ([]models.Book, error) {
+func (ms *MapBookStorage) GetBooks() ([]models.Book, error) {
 	if len(ms.bStor) == 0 {
 		return nil, storageerror.ErrEmptyStorage
 	}
@@ -76,7 +87,7 @@ func (ms *MapStorage) GetBooks() ([]models.Book, error) {
 	return books, nil
 }
 
-func (ms *MapStorage) GetBook(bid string) (models.Book, error) {
+func (ms *MapBookStorage) GetBook(bid string) (models.Book, error) {
 	book, ok := ms.bStor[bid]
 	if !ok {
 		return models.Book{}, storageerror.ErrBookNoFound
@@ -84,7 +95,7 @@ func (ms *MapStorage) GetBook(bid string) (models.Book, error) {
 	return book, nil
 }
 
-func (ms *MapStorage) DeleteBook(bid string) error {
+func (ms *MapBookStorage) DeleteBook(bid string) error {
 	_, ok := ms.bStor[bid]
 	if !ok {
 		return storageerror.ErrBookNoFound

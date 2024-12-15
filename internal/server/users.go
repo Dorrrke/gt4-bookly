@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) loginHendler(ctx *gin.Context) { //nolint:dupl //todo
+func (s *BooklyAPI) loginHendler(ctx *gin.Context) { //nolint:dupl //todo
 	log := logger.Get()
 	var user models.UserLogin
 	err := ctx.ShouldBindBodyWithJSON(&user)
@@ -32,7 +32,7 @@ func (s *Server) loginHendler(ctx *gin.Context) { //nolint:dupl //todo
 	ctx.String(http.StatusCreated, "User was logined; user id: %s", uid)
 }
 
-func (s *Server) registerHendler(ctx *gin.Context) { //nolint:dupl //todo
+func (s *BooklyAPI) registerHendler(ctx *gin.Context) { //nolint:dupl //todo
 	log := logger.Get()
 	var user models.User
 	err := ctx.ShouldBindBodyWithJSON(&user)
