@@ -13,28 +13,29 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type Server struct {
+type BooklyAPI struct {
 	serve    *http.Server
 	valid    *validator.Validate
 	uService service.UserService
 	bService service.BookService
 }
 
-func New(cfg config.Config, us service.UserService, bs service.BookService) *Server {
+func New(cfg config.Config, us service.UserService, bs service.BookService) *BooklyAPI {
 	addrStr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	server := http.Server{ //nolint:gosec //todo
 		Addr: addrStr,
 	}
 	vald := validator.New()
-	return &Server{
+	srv := BooklyAPI{
 		serve:    &server,
 		valid:    vald,
 		uService: us,
 		bService: bs,
 	}
+	return &srv
 }
 
-func (s *Server) Run() error {
+func (s *BooklyAPI) Run() error {
 	log := logger.Get()
 	router := s.configRouting()
 	s.serve.Handler = router
@@ -46,11 +47,11 @@ func (s *Server) Run() error {
 	return nil
 }
 
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *BooklyAPI) Shutdown(ctx context.Context) error {
 	return s.serve.Shutdown(ctx)
 }
 
-func (s *Server) configRouting() *gin.Engine {
+func (s *BooklyAPI) configRouting() *gin.Engine {
 	router := gin.Default()
 	router.GET("/", func(ctx *gin.Context) { ctx.String(http.StatusOK, "Hello, my friend!") })
 	users := router.Group("/users")
@@ -61,7 +62,7 @@ func (s *Server) configRouting() *gin.Engine {
 	}
 	books := router.Group("/books")
 	{
-		books.GET("/:id")
+		books.GET("/:id", s.getBookHandler)
 		books.DELETE("/:id")
 		books.GET("/", s.getBooksHandler)
 		books.POST("/", s.addBookHandler)

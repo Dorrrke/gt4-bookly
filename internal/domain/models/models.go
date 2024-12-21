@@ -27,3 +27,11 @@ type Book struct {
 	Description string    `json:"desc" validate:"required"`
 	WritedAt    time.Time `json:"writed_at" validate:"required"`
 }
+
+type BookRequest struct {
+	BID         uuid.UUID `json:"bid"`
+	Lable       string    `json:"lable" validate:"required"`
+	Author      string    `json:"author" validate:"required"`
+	Description string    `json:"desc" validate:"required"`
+	WritedAt    string    `json:"writed_at" validate:"required"`
+}
