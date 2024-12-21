@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/Dorrrke/gt4-bookly/internal/config"
 	"github.com/Dorrrke/gt4-bookly/internal/logger"
+	"github.com/Dorrrke/gt4-bookly/internal/server/utils"
 	"github.com/Dorrrke/gt4-bookly/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -51,6 +53,29 @@ func (s *BooklyAPI) Shutdown(ctx context.Context) error {
 	return s.serve.Shutdown(ctx)
 }
 
+func (s *BooklyAPI) JWTAuthMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		log := logger.Get()
+		token := ctx.GetHeader("Authorization")
+		if token == "" {
+			ctx.String(http.StatusUnauthorized, "token is empty")
+			return
+		}
+		UID, err := utils.ValidToken(token)
+		if err != nil {
+			log.Error().Err(err).Send()
+			if errors.Is(err, utils.ErrInvalidToken) {
+				ctx.String(http.StatusUnauthorized, err.Error())
+				return
+			}
+			ctx.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		ctx.Set("uid", UID)
+		ctx.Next()
+	}
+}
+
 func (s *BooklyAPI) configRouting() *gin.Engine {
 	router := gin.Default()
 	router.GET("/", func(ctx *gin.Context) { ctx.String(http.StatusOK, "Hello, my friend!") })
@@ -65,8 +90,7 @@ func (s *BooklyAPI) configRouting() *gin.Engine {
 		books.GET("/:id", s.getBookHandler)
 		books.DELETE("/:id")
 		books.GET("/", s.getBooksHandler)
-		books.POST("/", s.addBookHandler)
+		books.POST("/", s.JWTAuthMiddleware(), s.addBookHandler)
 	}
-
 	return router
 }

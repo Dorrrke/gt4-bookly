@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users(
     email text NOT NULL,
     pass text NOT NULL,
     age integer,
-    RegisteredAt timestamp NOT NULL default NOW()
+    RegisteredAt timestamp NOT NULL default NOW(),
     UNIQUE (email)
 );
 
