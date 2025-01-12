@@ -6,7 +6,8 @@ type BookStorage interface {
 	SaveBook(models.Book) (string, error)
 	GetBooks() ([]models.Book, error)
 	GetBook(string) (models.Book, error)
-	DeleteBook(string) error
+	DeleteBooks() error
+	SetDeleteBookStatus(string) error
 }
 
 type BookService struct {
@@ -28,6 +29,10 @@ func (bs *BookService) GetBook(bid string) (models.Book, error) {
 	return bs.stor.GetBook(bid)
 }
 
-func (bs *BookService) DeleteBook(bid string) error {
-	return bs.stor.DeleteBook(bid)
+func (bs *BookService) SetDeleteStatus(bid string) error {
+	return bs.stor.SetDeleteBookStatus(bid)
+}
+
+func (bs *BookService) DeleteBooks() error {
+	return bs.stor.DeleteBooks()
 }

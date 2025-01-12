@@ -29,6 +29,10 @@ func NewDB(ctx context.Context, addr string) (*DBStorage, error) {
 	return &DBStorage{conn: conn}, nil
 }
 
+func (dbs *DBStorage) Close() error {
+	return dbs.conn.Close(context.Background())
+}
+
 func (dbs *DBStorage) SaveUser(user models.User) (string, error) {
 	log := logger.Get()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -79,7 +83,7 @@ func (dbs *DBStorage) GetBooks() ([]models.Book, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	rows, err := dbs.conn.Query(ctx, "SELECT * FROM books")
+	rows, err := dbs.conn.Query(ctx, "SELECT bid, lable, author, descriptons, WritedAt FROM books WHERE deleted = false")
 	if err != nil {
 		log.Error().Err(err).Msg("failed get data from table books")
 		return nil, err
@@ -124,7 +128,7 @@ func (dbs *DBStorage) GetBook(bid string) (models.Book, error) {
 	defer cancel()
 
 	var book models.Book
-	row := dbs.conn.QueryRow(ctx, "SELECT * FROM books WHERE bid=$1", bid)
+	row := dbs.conn.QueryRow(ctx, "SELECT * FROM books WHERE bid=$1 AND deleted = false", bid)
 	err := row.Scan(&book.BID, &book.Lable, &book.Author, &book.Description, &book.WritedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -135,15 +139,35 @@ func (dbs *DBStorage) GetBook(bid string) (models.Book, error) {
 	return book, nil
 }
 
-func (dbs *DBStorage) DeleteBook(bid string) error {
+func (dbs *DBStorage) SetDeleteBookStatus(bid string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	_, err := dbs.conn.Exec(ctx, "DELETE FROM books WHERE bid=$1", bid)
+	_, err := dbs.conn.Exec(ctx, "UPDATE books SET deleted = true WHERE bid=$1", bid)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (dbs *DBStorage) DeleteBooks() error {
+	log := logger.Get()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	tx, err := dbs.conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed start transaction: %w", err)
+	}
+	defer func() {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("failed rollback transaction")
+		}
+	}()
+	if _, err = tx.Exec(ctx, "DELETE FROM books WHERE deleted=true"); err != nil {
+		log.Error().Err(err).Msg("delete books failed")
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func Migrations(dbDsn string, migratePath string) error {
