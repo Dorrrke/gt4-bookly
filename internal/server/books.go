@@ -14,6 +14,13 @@ import (
 
 func (s *BooklyAPI) addBookHandler(ctx *gin.Context) {
 	log := logger.Get()
+	_, exist := ctx.Get("uid")
+	if !exist {
+		log.Error().Msg("user ID not found")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "User ID not found"})
+		return
+	}
+	// UID := fmt.Sprintf("%v", uid)
 	var bookReq models.BookRequest
 	err := ctx.ShouldBindBodyWithJSON(&bookReq)
 	if err != nil {

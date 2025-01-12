@@ -5,6 +5,7 @@ import (
 
 	"github.com/Dorrrke/gt4-bookly/internal/domain/models"
 	"github.com/Dorrrke/gt4-bookly/internal/logger"
+	"github.com/Dorrrke/gt4-bookly/internal/server/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +30,12 @@ func (s *BooklyAPI) loginHendler(ctx *gin.Context) { //nolint:dupl //todo
 		ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "invalid input data", "error": err.Error()})
 		return
 	}
+	token, err := utils.CreateJWT(uid)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	ctx.Header("Authorization", token)
 	ctx.String(http.StatusCreated, "User was logined; user id: %s", uid)
 }
 
@@ -52,5 +59,11 @@ func (s *BooklyAPI) registerHendler(ctx *gin.Context) { //nolint:dupl //todo
 		ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "invalid input data", "error": err.Error()})
 		return
 	}
+	token, err := utils.CreateJWT(uid)
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	ctx.Header("Authorization", token)
 	ctx.String(http.StatusCreated, "User was created; user id: %s", uid)
 }
