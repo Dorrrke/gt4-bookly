@@ -20,6 +20,8 @@ type BooklyAPI struct {
 	valid    *validator.Validate
 	uService service.UserService
 	bService service.BookService
+	delChan  chan struct{}
+	ErrChan  chan error
 }
 
 func New(cfg config.Config, us service.UserService, bs service.BookService) *BooklyAPI {
@@ -33,14 +35,17 @@ func New(cfg config.Config, us service.UserService, bs service.BookService) *Boo
 		valid:    vald,
 		uService: us,
 		bService: bs,
+		delChan:  make(chan struct{}, 10),
+		ErrChan:  make(chan error, 10),
 	}
 	return &srv
 }
 
-func (s *BooklyAPI) Run() error {
+func (s *BooklyAPI) Run(ctx context.Context) error {
 	log := logger.Get()
 	router := s.configRouting()
 	s.serve.Handler = router
+	go s.deleter(ctx)
 	log.Info().Str("addr", s.serve.Addr).Msg("server start")
 	if err := s.serve.ListenAndServe(); err != nil {
 		log.Error().Err(err).Msg("runing server failed")
@@ -88,9 +93,9 @@ func (s *BooklyAPI) configRouting() *gin.Engine {
 	books := router.Group("/books")
 	{
 		books.GET("/:id", s.getBookHandler)
-		books.DELETE("/:id")
 		books.GET("/", s.getBooksHandler)
 		books.POST("/", s.JWTAuthMiddleware(), s.addBookHandler)
+		books.DELETE("/:id", s.JWTAuthMiddleware(), s.deleteBookHandler)
 	}
 	return router
 }

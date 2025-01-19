@@ -103,3 +103,11 @@ func (ms *MapBookStorage) DeleteBook(bid string) error {
 	delete(ms.bStor, bid)
 	return nil
 }
+
+func (ms *MapBookStorage) DeleteBooks() error {
+	return nil
+}
+
+func (ms *MapBookStorage) SetDeleteBookStatus(bid string) error {
+	return nil
+}

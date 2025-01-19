@@ -13,5 +13,6 @@ CREATE TABLE IF NOT EXISTS books(
     lable text NOT NULL,
     author text NOT NULL,
     descriptons text NOT NULL,
-    WritedAt timestamp NOT NULL
+    WritedAt timestamp NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false
 );

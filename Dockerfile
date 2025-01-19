@@ -11,5 +11,5 @@ WORKDIR /root/
 COPY --from=builder /app/bookly .
 COPY --from=builder /app/bookly wait-for-it.sh
 RUN chmod +x wait-for-it.sh
-CMD ["./wait-for-it.sh", "db:5432","--timeout=30","./bookly", "-debug"]
+CMD ["./bookly", "--debug"]
 EXPOSE 8081

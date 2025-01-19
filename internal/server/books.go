@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -91,4 +92,45 @@ func (s *BooklyAPI) getBookHandler(ctx *gin.Context) {
 		WritedAt:    book.WritedAt.Format("2006-01"),
 	}
 	ctx.JSON(http.StatusOK, reqBook)
+}
+
+func (s *BooklyAPI) deleteBookHandler(ctx *gin.Context) {
+	log := logger.Get()
+	bid := ctx.Param("id")
+	err := s.bService.SetDeleteStatus(bid)
+	if err != nil {
+		log.Error().Err(err).Msg("delete book failed")
+		if errors.Is(err, storageerror.ErrBookNoFound) {
+			ctx.JSON(http.StatusNoContent, gin.H{"error": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	s.delChan <- struct{}{}
+	ctx.String(http.StatusOK, "Book %s was deleted", bid)
+}
+
+func (s *BooklyAPI) deleter(ctx context.Context) {
+	log := logger.Get()
+	defer log.Debug().Msg("deleter stoped")
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(30 * time.Second):
+			log.Debug().Int("len", len(s.delChan)).Int("cap", cap(s.delChan)).Msg("deleter chan check")
+			if len(s.delChan) == cap(s.delChan) {
+				log.Debug().Int("len", len(s.delChan)).Int("cap", cap(s.delChan)).Msg("deleter chan is full")
+				for i := 0; i < cap(s.delChan); i++ {
+					<-s.delChan
+				}
+				if err := s.bService.DeleteBooks(); err != nil {
+					log.Error().Err(err).Msg("delete all books failed")
+					s.ErrChan <- err
+					return
+				}
+			}
+		}
+	}
 }
