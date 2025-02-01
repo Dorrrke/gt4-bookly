@@ -17,7 +17,10 @@ import (
 )
 
 func main() {
-	cfg := config.ReadConfig()
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		panic(err)
+	}
 	log := logger.Get(cfg.Debug)
 	log.Debug().Any("cfg", cfg).Msg("config")
 
@@ -34,7 +37,7 @@ func main() {
 	var userService service.UserService
 	var bookService service.BookService
 
-	err := storage.Migrations(cfg.DbDSN, cfg.MigratePath)
+	err = storage.Migrations(cfg.DbDSN, cfg.MigratePath)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}

@@ -2,8 +2,10 @@ package config
 
 import (
 	"cmp"
+	"errors"
 	"flag"
 	"log"
+	"net"
 	"os"
 	"strconv"
 )
@@ -21,7 +23,9 @@ const (
 	defaultPort = 8081
 )
 
-func ReadConfig() Config {
+var ErrInvalidHost = errors.New("invalid host")
+
+func ReadConfig() (Config, error) {
 	var cfg Config
 
 	flag.StringVar(&cfg.Host, "host", defaultHost, "server host address")
@@ -34,11 +38,17 @@ func ReadConfig() Config {
 		port, err := strconv.Atoi(tmp)
 		if err != nil {
 			log.Println(err.Error())
-			return cfg
+			return Config{}, err
 		}
 		cfg.Port = port
 	}
 	cfg.MigratePath = cmp.Or(os.Getenv("MIGRATE_PATH"), "migrations")
 	cfg.DbDSN = cmp.Or(os.Getenv("DB_DSN"), "postgres://user:password@localhost:5432/gt4?sslmode=disable")
-	return cfg
+
+	srvHost := net.ParseIP(cfg.Host)
+	if srvHost == nil {
+		return Config{}, ErrInvalidHost
+	}
+
+	return cfg, nil
 }
