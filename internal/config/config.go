@@ -13,14 +13,16 @@ import (
 type Config struct {
 	Host        string
 	Port        int
+	AuthHost    string
 	DbDSN       string
 	MigratePath string
 	Debug       bool
 }
 
 const (
-	defaultHost = "0.0.0.0"
-	defaultPort = 8081
+	defaultHost     = "0.0.0.0"
+	defaultPort     = 8081
+	defaultAuthHost = "localhost:9091"
 )
 
 var ErrInvalidHost = errors.New("invalid host")
@@ -29,6 +31,7 @@ func ReadConfig() (Config, error) {
 	var cfg Config
 
 	flag.StringVar(&cfg.Host, "host", defaultHost, "server host address")
+	flag.StringVar(&cfg.AuthHost, "g", defaultAuthHost, "flag to set the auth service host")
 	flag.IntVar(&cfg.Port, "port", defaultPort, "server port")
 	flag.BoolVar(&cfg.Debug, "debug", false, "enable logger debug level")
 	flag.Parse()
@@ -49,6 +52,7 @@ func ReadConfig() (Config, error) {
 	if srvHost == nil {
 		return Config{}, ErrInvalidHost
 	}
+	cfg.AuthHost = cmp.Or(os.Getenv("AUTH_DSN"), cfg.AuthHost)
 
 	return cfg, nil
 }

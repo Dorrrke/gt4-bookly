@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
+	authservicev1 "github.com/Dorrrke/gt4-bookly/internal/clientgrpc"
 	"github.com/Dorrrke/gt4-bookly/internal/domain/models"
 	"github.com/Dorrrke/gt4-bookly/internal/logger"
 	"github.com/Dorrrke/gt4-bookly/internal/server/utils"
@@ -24,19 +26,27 @@ func (s *BooklyAPI) loginHendler(ctx *gin.Context) { //nolint:dupl //todo
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid, err := s.uService.LoginUser(user)
+	// uid, err := s.uService.LoginUser(user)
+	// if err != nil {
+	// 	log.Error().Err(err).Msg("user login validate failed")
+	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "invalid input data", "error": err.Error()})
+	// 	return
+	// }
+	resp, err := s.auth.Login(context.Background(), &authservicev1.UserCredentials{
+		Email:    user.Email,
+		Password: user.Passoword,
+	})
 	if err != nil {
-		log.Error().Err(err).Msg("user login validate failed")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "invalid input data", "error": err.Error()})
-		return
+		ctx.String(http.StatusInternalServerError, err.Error())
 	}
+	uid := resp.GetToken()
 	token, err := utils.CreateJWT(uid)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	ctx.Header("Authorization", token)
-	ctx.String(http.StatusCreated, "User was logined; user id: %s", uid)
+	ctx.String(http.StatusCreated, "%s; user id: %s", resp.GetMessage(), uid)
 }
 
 func (s *BooklyAPI) registerHendler(ctx *gin.Context) { //nolint:dupl //todo
@@ -53,17 +63,27 @@ func (s *BooklyAPI) registerHendler(ctx *gin.Context) { //nolint:dupl //todo
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid, err := s.uService.RegisterUser(user)
+	// uid, err := s.uService.RegisterUser(user)
+	// if err != nil {
+	// 	log.Error().Err(err).Msg("user register failed")
+	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "invalid input data", "error": err.Error()})
+	// 	return
+	// }
+	resp, err := s.auth.Register(context.Background(), &authservicev1.User{
+		Name:     user.Name,
+		Email:    user.Email,
+		Password: user.Passoword,
+		Age:      int32(user.Age),
+	})
 	if err != nil {
-		log.Error().Err(err).Msg("user register failed")
-		ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "invalid input data", "error": err.Error()})
-		return
+		ctx.String(http.StatusInternalServerError, err.Error())
 	}
+	uid := resp.GetToken()
 	token, err := utils.CreateJWT(uid)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	ctx.Header("Authorization", token)
-	ctx.String(http.StatusCreated, "User was created; user id: %s", uid)
+	ctx.String(http.StatusCreated, "%s; user id: %s", resp.GetMessage(), uid)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	authservicev1 "github.com/Dorrrke/gt4-bookly/internal/clientgrpc"
 	"github.com/Dorrrke/gt4-bookly/internal/config"
 	"github.com/Dorrrke/gt4-bookly/internal/logger"
 	"github.com/Dorrrke/gt4-bookly/internal/server/utils"
@@ -20,11 +21,12 @@ type BooklyAPI struct {
 	valid    *validator.Validate
 	uService service.UserService
 	bService service.BookService
+	auth     authservicev1.AuthServiceClient
 	delChan  chan struct{}
 	ErrChan  chan error
 }
 
-func New(cfg config.Config, us service.UserService, bs service.BookService) *BooklyAPI {
+func New(cfg config.Config, us service.UserService, bs service.BookService, authClient authservicev1.AuthServiceClient) *BooklyAPI {
 	addrStr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	server := http.Server{ //nolint:gosec //todo
 		Addr: addrStr,
@@ -35,6 +37,7 @@ func New(cfg config.Config, us service.UserService, bs service.BookService) *Boo
 		valid:    vald,
 		uService: us,
 		bService: bs,
+		auth:     authClient,
 		delChan:  make(chan struct{}, 10),
 		ErrChan:  make(chan error, 10),
 	}
