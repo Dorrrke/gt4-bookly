@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	authservicev1 "github.com/Dorrrke/gt4-bookly/internal/clientgrpc"
 	"github.com/Dorrrke/gt4-bookly/internal/config"
 	"github.com/Dorrrke/gt4-bookly/internal/logger"
 	"github.com/Dorrrke/gt4-bookly/internal/server"
@@ -14,10 +15,15 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	cfg := config.ReadConfig()
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		panic(err)
+	}
 	log := logger.Get(cfg.Debug)
 	log.Debug().Any("cfg", cfg).Msg("config")
 
@@ -34,7 +40,7 @@ func main() {
 	var userService service.UserService
 	var bookService service.BookService
 
-	err := storage.Migrations(cfg.DbDSN, cfg.MigratePath)
+	err = storage.Migrations(cfg.DbDSN, cfg.MigratePath)
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}
@@ -49,7 +55,17 @@ func main() {
 		userService = service.NewUserService(stor)
 		bookService = service.NewBookService(stor)
 	}
-	serve := server.New(cfg, userService, bookService)
+
+	conn, err := grpc.NewClient(cfg.AuthHost, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(err)
+	}
+
+	defer conn.Close()
+
+	client := authservicev1.NewAuthServiceClient(conn)
+
+	serve := server.New(cfg, userService, bookService, client)
 
 	group, gCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
